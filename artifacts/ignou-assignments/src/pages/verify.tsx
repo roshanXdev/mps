@@ -19,11 +19,11 @@ export default function Verify() {
 
   const { data: statusData, isLoading: isChecking, error, isError } = useCheckPaymentStatus(
     { phone: searchPhone },
-    { query: { enabled: searchPhone.length === 10, retry: false } }
+    { query: { enabled: searchPhone.length === 10, retry: false } as any }
   );
 
   const { data: assignments, isLoading: isAssignmentsLoading } = useListAssignments({
-    query: { enabled: statusData?.status === "approved" }
+    query: { enabled: statusData?.status === "approved" } as any
   });
 
   const handleSearch = (e: React.FormEvent) => {

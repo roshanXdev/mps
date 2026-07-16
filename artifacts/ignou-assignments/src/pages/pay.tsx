@@ -64,7 +64,7 @@ export default function Pay() {
         toast({
           variant: "destructive",
           title: "त्रुटि",
-          description: err.error?.error || "कुछ गलत हो गया, कृपया फिर से प्रयास करें।",
+          description: (err as any)?.data?.error || err.message || "कुछ गलत हो गया, कृपया फिर से प्रयास करें।",
         });
       }
     });
