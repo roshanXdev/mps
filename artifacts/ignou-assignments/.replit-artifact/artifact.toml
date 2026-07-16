@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "IGNOU PG Assignment Portal"
+version = "1.0.0"
+id = "artifacts/ignou-assignments"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23316
+
+[services.development]
+run = "pnpm --filter @workspace/ignou-assignments run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ignou-assignments", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ignou-assignments/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23316"
+BASE_PATH = "/"
