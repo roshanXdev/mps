@@ -1,14 +1,4 @@
 {
-  "buildCommand": "pnpm run typecheck:libs && pnpm --filter @workspace/ignou-assignments run build",
-  "outputDirectory": "artifacts/ignou-assignments/dist/public",
-  "installCommand": "pnpm install",
-  "functions": {
-    "api/server.ts": {
-      "maxDuration": 30
-    }
-  },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/server" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "buildCommand": "pnpm install && pnpm --filter @workspace/ignou-assignments run build",
+  "outputDirectory": "artifacts/ignou-assignments/dist/public"
 }
