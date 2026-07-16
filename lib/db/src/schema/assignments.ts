@@ -9,7 +9,7 @@ export const assignmentsTable = pgTable("assignments", {
   subject: text("subject").notNull(),
   year: text("year").notNull(),
   fileName: text("file_name").notNull(),
-  filePath: text("file_path").notNull(),
+  fileContent: text("file_content").notNull(), // base64 encoded file — no filesystem needed
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

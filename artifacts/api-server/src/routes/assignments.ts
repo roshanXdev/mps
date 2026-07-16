@@ -1,18 +1,11 @@
 import { Router } from "express";
 import { eq } from "drizzle-orm";
-import path from "path";
-import fs from "fs";
-import { db, assignmentsTable, paymentRequestsTable } from "@workspace/db";
+import { db } from "@workspace/db";
+import { assignmentsTable, paymentRequestsTable } from "@workspace/db";
 
 const router = Router();
-const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
 
-// Ensure uploads directory exists
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
-
-// GET /assignments — list all assignments (public metadata)
+// GET /assignments — list all assignments (public metadata, no file content)
 router.get("/assignments", async (req, res) => {
   try {
     const assignments = await db
@@ -51,7 +44,6 @@ router.get("/assignments/:id/download", async (req, res) => {
   }
 
   try {
-    // Check if payment is approved
     const paymentRows = await db
       .select()
       .from(paymentRequestsTable)
@@ -63,7 +55,6 @@ router.get("/assignments/:id/download", async (req, res) => {
       return;
     }
 
-    // Get assignment
     const rows = await db
       .select()
       .from(assignmentsTable)
@@ -76,14 +67,15 @@ router.get("/assignments/:id/download", async (req, res) => {
     }
 
     const assignment = rows[0];
-    const filePath = path.join(UPLOADS_DIR, assignment.filePath);
+    const buffer = Buffer.from(assignment.fileContent, "base64");
 
-    if (!fs.existsSync(filePath)) {
-      res.status(404).json({ error: "File not found on server" });
-      return;
-    }
-
-    res.download(filePath, assignment.fileName);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${assignment.fileName}"`
+    );
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Length", String(buffer.length));
+    res.send(buffer);
   } catch (err) {
     req.log.error({ err }, "Failed to download assignment");
     res.status(500).json({ error: "Internal server error" });

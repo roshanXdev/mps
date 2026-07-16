@@ -1,16 +1,9 @@
 import { Router } from "express";
 import { eq, count } from "drizzle-orm";
-import path from "path";
-import fs from "fs";
 import { db } from "@workspace/db";
 import { paymentRequestsTable, assignmentsTable } from "@workspace/db";
 
 const router = Router();
-const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
-
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
 
 // Admin auth middleware
 function requireAdmin(req: any, res: any, next: any) {
@@ -44,23 +37,23 @@ router.get("/admin/payment-requests", requireAdmin, async (req, res) => {
   const statusFilter = req.query.status as string | undefined;
 
   try {
-    let query = db.select().from(paymentRequestsTable);
-    let rows;
-    if (
-      statusFilter &&
-      ["pending", "approved", "rejected"].includes(statusFilter)
-    ) {
-      rows = await db
-        .select()
-        .from(paymentRequestsTable)
-        .where(eq(paymentRequestsTable.status, statusFilter as any))
-        .orderBy(paymentRequestsTable.createdAt);
-    } else {
-      rows = await db
-        .select()
-        .from(paymentRequestsTable)
-        .orderBy(paymentRequestsTable.createdAt);
-    }
+    const validStatuses = ["pending", "approved", "rejected"];
+    const rows =
+      statusFilter && validStatuses.includes(statusFilter)
+        ? await db
+            .select()
+            .from(paymentRequestsTable)
+            .where(
+              eq(
+                paymentRequestsTable.status,
+                statusFilter as "pending" | "approved" | "rejected"
+              )
+            )
+            .orderBy(paymentRequestsTable.createdAt)
+        : await db
+            .select()
+            .from(paymentRequestsTable)
+            .orderBy(paymentRequestsTable.createdAt);
 
     res.json(
       rows.map((r) => ({
@@ -147,24 +140,18 @@ router.patch(
   }
 );
 
-// POST /admin/assignments — upload assignment with base64 file
+// POST /admin/assignments — stores file as base64 in DB (no filesystem)
 router.post("/admin/assignments", requireAdmin, async (req, res) => {
   const { title, description, subject, year, fileName, fileData } = req.body;
 
   if (!title || !subject || !year || !fileName || !fileData) {
     res
       .status(400)
-      .json({ error: "Title, subject, year, fileName, and fileData are required" });
+      .json({ error: "title, subject, year, fileName, and fileData are required" });
     return;
   }
 
   try {
-    // Decode base64 and save to disk
-    const buffer = Buffer.from(fileData, "base64");
-    const safeFileName = `${Date.now()}_${fileName.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const filePath = path.join(UPLOADS_DIR, safeFileName);
-    fs.writeFileSync(filePath, buffer);
-
     const [inserted] = await db
       .insert(assignmentsTable)
       .values({
@@ -172,8 +159,8 @@ router.post("/admin/assignments", requireAdmin, async (req, res) => {
         description: description?.trim() || null,
         subject: subject.trim(),
         year: year.trim(),
-        fileName: fileName,
-        filePath: safeFileName,
+        fileName,
+        fileContent: fileData,
       })
       .returning();
 
@@ -206,12 +193,6 @@ router.delete("/admin/assignments/:id", requireAdmin, async (req, res) => {
       return;
     }
 
-    // Delete file from disk
-    const filePath = path.join(UPLOADS_DIR, deleted.filePath);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-
     res.json({ message: "Assignment deleted successfully" });
   } catch (err) {
     req.log.error({ err }, "Failed to delete assignment");
@@ -222,31 +203,30 @@ router.delete("/admin/assignments/:id", requireAdmin, async (req, res) => {
 // GET /admin/stats
 router.get("/admin/stats", requireAdmin, async (req, res) => {
   try {
-    const [totalPaymentsRow] = await db
-      .select({ count: count() })
-      .from(paymentRequestsTable);
-    const [pendingRow] = await db
-      .select({ count: count() })
-      .from(paymentRequestsTable)
-      .where(eq(paymentRequestsTable.status, "pending"));
-    const [approvedRow] = await db
-      .select({ count: count() })
-      .from(paymentRequestsTable)
-      .where(eq(paymentRequestsTable.status, "approved"));
-    const [rejectedRow] = await db
-      .select({ count: count() })
-      .from(paymentRequestsTable)
-      .where(eq(paymentRequestsTable.status, "rejected"));
-    const [totalAssignmentsRow] = await db
-      .select({ count: count() })
-      .from(assignmentsTable);
+    const [[total], [pending], [approved], [rejected], [totalA]] =
+      await Promise.all([
+        db.select({ count: count() }).from(paymentRequestsTable),
+        db
+          .select({ count: count() })
+          .from(paymentRequestsTable)
+          .where(eq(paymentRequestsTable.status, "pending")),
+        db
+          .select({ count: count() })
+          .from(paymentRequestsTable)
+          .where(eq(paymentRequestsTable.status, "approved")),
+        db
+          .select({ count: count() })
+          .from(paymentRequestsTable)
+          .where(eq(paymentRequestsTable.status, "rejected")),
+        db.select({ count: count() }).from(assignmentsTable),
+      ]);
 
     res.json({
-      totalPayments: Number(totalPaymentsRow.count),
-      pendingPayments: Number(pendingRow.count),
-      approvedPayments: Number(approvedRow.count),
-      rejectedPayments: Number(rejectedRow.count),
-      totalAssignments: Number(totalAssignmentsRow.count),
+      totalPayments: Number(total.count),
+      pendingPayments: Number(pending.count),
+      approvedPayments: Number(approved.count),
+      rejectedPayments: Number(rejected.count),
+      totalAssignments: Number(totalA.count),
     });
   } catch (err) {
     req.log.error({ err }, "Failed to get admin stats");
