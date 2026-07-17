@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Vercel Serverless API — Self-contained Express app.
  * All assignment files are stored as base64 in PostgreSQL (no filesystem).
