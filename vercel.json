@@ -1,7 +1,9 @@
 {
   "buildCommand": "pnpm install && pnpm --filter ignou-assignments run build",
   "outputDirectory": "artifacts/ignou-assignments/dist/public",
+  "framework": "vite",
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.ts" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
