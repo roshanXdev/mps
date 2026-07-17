@@ -1,4 +1,7 @@
 {
   "buildCommand": "pnpm install && pnpm --filter ignou-assignments run build",
-  "outputDirectory": "artifacts/ignou-assignments/dist/public"
+  "outputDirectory": "artifacts/ignou-assignments/dist/public",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
