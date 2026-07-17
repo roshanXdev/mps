@@ -123,8 +123,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <p className="text-muted-foreground mb-2 font-medium">
                 किसी भी समस्या के लिए हमें ईमेल करें।
               </p>
-              <a href="mailto:support@ignouwala.in" className="text-primary font-bold hover:underline">
-                support@ignouwala.in
+              <a href="https://roshancv.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline">
+                https://roshancv.vercel.app/
               </a>
             </div>
           </div>
