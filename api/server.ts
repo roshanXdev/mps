@@ -463,4 +463,7 @@ app.get("/api/admin/stats", requireAdmin, async (_req, res) => {
   }
 });
 
-export default app;
+// Vercel serverless function handler
+export default async function handler(req, res) {
+  await app(req, res);
+}

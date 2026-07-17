@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: ignou-assignments
+    env: static
+    buildCommand: cd artifacts/ignou-assignments && npm install --legacy-peer-deps && npm run build
+    publishDir: artifacts/ignou-assignments/dist/public
+    headers:
+      - source: /*
+        headers:
+          - name: Cache-Control
+            value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
